@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/auth_preferences.dart';
 import 'recipe_page.dart';
-// import 'help_page.dart';
-// import 'about_page.dart';
+import 'profile_page.dart';
+import 'kesanpesan_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,6 +13,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _loggedInUsername;
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = const [
+    RecipePage(),
+    KesanPesanPage(),
+    ProfilePage(),
+  ];
 
   @override
   void initState() {
@@ -24,6 +31,12 @@ class _HomePageState extends State<HomePage> {
     final username = await AuthPreferences.getUsername();
     setState(() {
       _loggedInUsername = username;
+    });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
     });
   }
 
@@ -39,7 +52,7 @@ class _HomePageState extends State<HomePage> {
           icon: const Icon(Icons.logout, color: Colors.redAccent),
           tooltip: 'Logout',
           onPressed: () async {
-            await AuthPreferences.logout();
+            await AuthPreferences.logout(_loggedInUsername);
             if (!mounted) return;
             Navigator.pushReplacementNamed(context, '/login');
           },
@@ -53,91 +66,26 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Temukan resep favoritmu dan mulai memasak!',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 30),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildMenuButton(
-                    icon: Icons.restaurant_menu,
-                    label: 'Resep',
-                    routeName: '/recipes',
-                    color: Colors.blue.shade50,
-                    iconColor: Colors.blueAccent,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildMenuButton(
-                    icon: Icons.help_outline,
-                    label: 'Bantuan',
-                    routeName: '/help',
-                    color: Colors.green.shade50,
-                    iconColor: Colors.green,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildMenuButton(
-                    icon: Icons.info_outline,
-                    label: 'Tentang Aplikasi',
-                    routeName: '/about',
-                    color: Colors.orange.shade50,
-                    iconColor: Colors.orange,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuButton({
-    required IconData icon,
-    required String label,
-    required String routeName,
-    required Color color,
-    required Color iconColor,
-  }) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, routeName),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor, size: 28),
-            const SizedBox(width: 16),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Beranda',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message_outlined),
+            label: 'Kesan & Pesan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profil',
+          ),
+        ],
       ),
     );
   }

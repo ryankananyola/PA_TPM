@@ -48,7 +48,7 @@ class _RecipePageState extends State<RecipePage> {
         iconTheme: const IconThemeData(color: Colors.black87),
         centerTitle: true,
         title: const Text(
-          'Resep',
+          'ResepKU',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,

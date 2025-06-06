@@ -11,6 +11,8 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _nimController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -41,12 +43,14 @@ class _RegisterPageState extends State<RegisterPage>
         _errorMessage = null;
       });
 
+      final nama = _namaController.text.trim();
+      final nim = _nimController.text.trim();
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      final users = await AuthPreferences.getRegisteredUsers();
+      final existingUser = await AuthPreferences.getUserData(username);
 
-      if (users.containsKey(username)) {
+      if (existingUser != null) {
         setState(() {
           _errorMessage = 'Username sudah terdaftar.';
           _isLoading = false;
@@ -54,7 +58,14 @@ class _RegisterPageState extends State<RegisterPage>
         return;
       }
 
-      await AuthPreferences.registerUser(username, password);
+
+      await AuthPreferences.registerUser(
+        username,
+        password,
+        nama,
+        nim,
+      );
+
 
       setState(() {
         _isLoading = false;
@@ -78,6 +89,8 @@ class _RegisterPageState extends State<RegisterPage>
 
   @override
   void dispose() {
+    _namaController.dispose();
+    _nimController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     _animationController.dispose();
@@ -131,7 +144,41 @@ class _RegisterPageState extends State<RegisterPage>
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _namaController,
+                          decoration: InputDecoration(
+                            hintText: 'Nama Lengkap',
+                            prefixIcon: const Icon(Icons.badge_outlined),
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (value) =>
+                              value == null || value.isEmpty ? 'Nama wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _nimController,
+                          decoration: InputDecoration(
+                            hintText: 'NIM',
+                            prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (value) =>
+                              value == null || value.isEmpty ? 'NIM wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 12),
                         TextFormField(
                           controller: _usernameController,
                           decoration: InputDecoration(
