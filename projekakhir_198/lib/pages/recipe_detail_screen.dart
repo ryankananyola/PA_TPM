@@ -6,6 +6,7 @@ import 'package:projekakhir_198_181/models/recipe_detail_model.dart';
 import 'package:projekakhir_198_181/services/recipe_service.dart';
 import 'feedback_page.dart';
 import '../models/feedback_model.dart';
+import 'buy_recipe_page.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final int recipeId;
@@ -244,6 +245,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
             label: const Text('Kirim Catatan'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BuyRecipePage(
+                    recipe: recipe,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.shopping_cart),
+            label: const Text('Beli Resep'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

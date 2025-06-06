@@ -13,6 +13,8 @@ import 'pages/favorite_page.dart';
 import 'pages/splash_page.dart';
 import 'models/feedback_model.dart';
 import 'models/message_model.dart';
+import 'pages/purchase_recipe_page.dart';
+import 'models/purchase_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,8 @@ void main() async {
   await Hive.openBox<FeedbackModel>('feedbacks');
   Hive.registerAdapter(MessageAdapter());
   await Hive.openBox<Message>('messagesBox');
+  Hive.registerAdapter(PurchasedRecipeAdapter());
+  await Hive.openBox<PurchasedRecipe>('purchases');
 
   runApp(const MyApp());
 }
@@ -55,6 +59,7 @@ class MyApp extends StatelessWidget {
         '/kesanpesan': (context) => const KesanPesanPage(),
         '/profile': (context) => const ProfilePage(),
         '/favorites': (context) => const FavoritePage(),
+        '/purchases': (context) => const PurchasedRecipesPage()
       },
       home: FutureBuilder<bool>(
         future: checkLoginStatus(),
