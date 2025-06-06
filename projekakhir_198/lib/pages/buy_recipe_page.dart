@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+
 import '../models/recipe_model.dart';
 import '../models/recipe_detail_model.dart';
 import '../models/purchase_model.dart';
-
 
 class BuyRecipePage extends StatefulWidget {
   final RecipeServiceDetail recipe;
@@ -17,6 +22,7 @@ class BuyRecipePage extends StatefulWidget {
 class _BuyRecipePageState extends State<BuyRecipePage> {
   String _selectedCurrency = 'IDR';
   bool _isAlreadyBought = false;
+  String? _currentAddress;
 
   final Map<String, double> _exchangeRates = {
     'IDR': 1.0,
@@ -42,6 +48,78 @@ class _BuyRecipePageState extends State<BuyRecipePage> {
     });
   }
 
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _currentAddress = "Layanan lokasi tidak aktif";
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+          setState(() {
+            _currentAddress = "Izin lokasi ditolak";
+          });
+          return;
+        }
+      }
+
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      print("Position: ${position.latitude}, ${position.longitude}");
+
+      if (kIsWeb) {
+        // Gunakan API Nominatim untuk web
+        final url = Uri.parse(
+            "https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.latitude}&lon=${position.longitude}");
+        final response = await http.get(url, headers: {
+          'User-Agent': 'FlutterApp'
+        });
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final address = data["address"];
+          final city = address["city"] ?? address["town"] ?? address["village"] ?? "";
+          final country = address["country"] ?? "";
+          setState(() {
+            _currentAddress = "$city, $country";
+          });
+        } else {
+          setState(() {
+            _currentAddress = "Gagal reverse geocoding (web)";
+          });
+        }
+      } else {
+        // Gunakan geocoding native di Android/iOS
+        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          List<String> parts = [];
+
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) parts.add(place.subLocality!);
+          if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
+          if (place.country != null && place.country!.isNotEmpty) parts.add(place.country!);
+
+          setState(() {
+            _currentAddress = parts.join(', ');
+          });
+        } else {
+          setState(() {
+            _currentAddress = "Lokasi tidak ditemukan";
+          });
+        }
+      }
+    } catch (e) {
+      print("Error mendapatkan lokasi: $e");
+      setState(() {
+        _currentAddress = "Gagal mendapatkan lokasi: $e";
+      });
+    }
+  }
 
   Future<void> _saveToHive(double priceInIDR) async {
     final box = await Hive.openBox<PurchasedRecipe>('purchases');
@@ -57,6 +135,8 @@ class _BuyRecipePageState extends State<BuyRecipePage> {
     final purchasedRecipe = PurchasedRecipe(
       recipe: recipeToSave,
       purchasePrice: priceInIDR,
+      location: _currentAddress,
+      purchasedAt: DateTime.now(),
     );
 
     await box.put(widget.recipe.id, purchasedRecipe);
@@ -74,8 +154,8 @@ class _BuyRecipePageState extends State<BuyRecipePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Beli Resep"),
-        backgroundColor: Colors.green,
+        title: const Text('Beli Resep'),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -110,25 +190,47 @@ class _BuyRecipePageState extends State<BuyRecipePage> {
               'Harga: ${_getConvertedPrice(recipe.rating).toStringAsFixed(2)} $_selectedCurrency',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            if (_currentAddress != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  "Lokasi Anda: $_currentAddress",
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.location_on),
+                label: const Text('Ambil Lokasi Saya'),
+                onPressed: () async {
+                  await _getCurrentLocation();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ),
             const Spacer(),
             Center(
               child: ElevatedButton.icon(
                 onPressed: _isAlreadyBought
-                  ? null
-                  : () async {
-                      double priceInIDR = _calculatePrice(widget.recipe.rating);
-                      await _saveToHive(priceInIDR);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Berhasil membeli resep seharga ${_getConvertedPrice(widget.recipe.rating).toStringAsFixed(2)} $_selectedCurrency!'
+                    ? null
+                    : () async {
+                        double priceInIDR = _calculatePrice(widget.recipe.rating);
+                        await _saveToHive(priceInIDR);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Berhasil membeli resep seharga ${_getConvertedPrice(widget.recipe.rating).toStringAsFixed(2)} $_selectedCurrency!',
+                            ),
+                            backgroundColor: Colors.green,
                           ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      Navigator.pop(context);
-                    },
-
+                        );
+                        Navigator.pop(context);
+                      },
                 icon: const Icon(Icons.check),
                 label: Text(_isAlreadyBought ? "Sudah Dibeli" : "Beli Sekarang"),
                 style: ElevatedButton.styleFrom(

@@ -19,17 +19,23 @@ class PurchasedRecipeAdapter extends TypeAdapter<PurchasedRecipe> {
     return PurchasedRecipe(
       recipe: fields[0] as Recipe,
       purchasePrice: fields[1] as double,
+      location: fields[2] as String?,
+      purchasedAt: fields[3] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, PurchasedRecipe obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.recipe)
       ..writeByte(1)
-      ..write(obj.purchasePrice);
+      ..write(obj.purchasePrice)
+      ..writeByte(2)
+      ..write(obj.location)
+      ..writeByte(3)
+      ..write(obj.purchasedAt);
   }
 
   @override

@@ -11,8 +11,16 @@ class PurchasedRecipe extends HiveObject {
   @HiveField(1)
   final double purchasePrice;
 
+  @HiveField(2)
+  final String? location;
+
+  @HiveField(3)
+  final DateTime purchasedAt; // waktu pembelian
+
   PurchasedRecipe({
     required this.recipe,
     required this.purchasePrice,
+    this.location,
+    required this.purchasedAt,
   });
 }
