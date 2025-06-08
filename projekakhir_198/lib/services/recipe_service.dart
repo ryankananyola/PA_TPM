@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/recipe_model.dart';
-import '../models/recipe_detail_model.dart'; // ✅ tambahkan ini
+import '../models/recipe_detail_model.dart';
 
 class RecipeService {
   static const String baseUrl = 'https://dummyjson.com/recipes';

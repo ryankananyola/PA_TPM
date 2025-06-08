@@ -7,6 +7,7 @@ import 'package:projekakhir_198_181/services/recipe_service.dart';
 import 'feedback_page.dart';
 import '../models/feedback_model.dart';
 import 'buy_recipe_page.dart';
+import 'package:intl/intl.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final int recipeId;
@@ -176,7 +177,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
   }
 
   Widget _buildInfoTab(RecipeServiceDetail recipe) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,13 +216,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () {
-              final simpleRecipe = Recipe(
-                id: recipe.id,
-                name: recipe.name,
-                image: recipe.image,
-                cuisine: recipe.cuisine,
-                rating: recipe.rating,
-              );
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -249,16 +243,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            
           ),
+          const SizedBox(height: 10),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BuyRecipePage(
-                    recipe: recipe,
-                  ),
+                  builder: (context) => BuyRecipePage(recipe: recipe),
                 ),
               );
             },
@@ -277,11 +269,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          _buildFeedbackList(recipe.id), // <<== Tambahkan ini!
+          _buildFeedbackList(recipe.id),
         ],
       ),
     );
   }
+
+  int getTimezoneOffset(String timezone) {
+    switch (timezone) {
+      case 'WITA':
+        return 8;
+      case 'WIT':
+        return 9;
+      case 'London':
+        return 1;
+      case 'WIB':
+      default:
+        return 7;
+    }
+  }
+
   
   Widget _buildFeedbackList(int recipeId) {
     final box = Hive.box<FeedbackModel>('feedbacks');
@@ -304,7 +311,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> with SingleTick
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: feedbackList.map((f) {
-            final timeStr = '${f.submittedAt.toLocal()} (${f.timezone})';
+            final offset = getTimezoneOffset(f.timezone);
+            final convertedTime = f.submittedAt.toUtc().add(Duration(hours: offset));
+            final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(convertedTime);
+            final timeStr = '$formattedTime (${f.timezone})';
+
 
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 6),

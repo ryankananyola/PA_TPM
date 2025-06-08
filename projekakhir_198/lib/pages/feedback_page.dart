@@ -22,7 +22,6 @@ class FeedbackPage extends StatefulWidget {
   _FeedbackPageState createState() => _FeedbackPageState();
 }
 
-
 class _FeedbackPageState extends State<FeedbackPage> {
   final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
@@ -30,40 +29,35 @@ class _FeedbackPageState extends State<FeedbackPage> {
   String selectedTimezone = "WIB";
   final timezones = ["WIB", "WITA", "WIT", "London"];
 
-  DateTime now = DateTime.now();
-
-  String getConvertedTime(String timezone) {
-    int offset = 0;
+  // Helper untuk mendapatkan offset zona waktu dalam jam dari UTC
+  int getTimezoneOffset(String timezone) {
     switch (timezone) {
       case 'WITA':
-        offset = 1;
-        break;
+        return 8;
       case 'WIT':
-        offset = 2;
-        break;
+        return 9;
       case 'London':
-        offset = -6; // WIB ke GMT
-        break;
+        return 1; // GMT+1 saat DST (misal Juni)
+      case 'WIB':
       default:
-        offset = 0;
+        return 7;
     }
-    return DateFormat('yyyy-MM-dd – HH:mm').format(now.add(Duration(hours: offset)));
+  }
+
+  // Format waktu yang sudah dikonversi
+  String getConvertedTime(String timezone) {
+    final offset = getTimezoneOffset(timezone);
+    final converted = DateTime.now().toUtc().add(Duration(hours: offset));
+    return DateFormat('yyyy-MM-dd – HH:mm').format(converted);
   }
 
   void _submitFeedback() async {
     if (_formKey.currentState!.validate()) {
+      final offset = getTimezoneOffset(selectedTimezone);
       final feedback = FeedbackModel(
         recipeId: widget.recipeId,
         comment: _controller.text.trim(),
-        submittedAt: DateTime.now().toUtc().add(Duration(
-          hours: selectedTimezone == "WITA"
-              ? 8
-              : selectedTimezone == "WIT"
-                  ? 9
-                  : selectedTimezone == "London"
-                      ? 1
-                      : 7,
-        )),
+        submittedAt: DateTime.now(),
         timezone: selectedTimezone,
       );
 
@@ -75,7 +69,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     String convertedTime = getConvertedTime(selectedTimezone);
@@ -84,9 +77,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       appBar: AppBar(
         title: Text('Kirim Catatan'),
       ),
-      
       body: Padding(
-        
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -111,7 +102,10 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       children: [
                         Text(
                           widget.recipeTitle,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           widget.recipeCity,
@@ -123,7 +117,10 @@ class _FeedbackPageState extends State<FeedbackPage> {
                 ],
               ),
               SizedBox(height: 16),
-              Text("Zona Waktu"),
+              Text(
+                "Zona Waktu",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               DropdownButton<String>(
                 value: selectedTimezone,
                 onChanged: (value) {

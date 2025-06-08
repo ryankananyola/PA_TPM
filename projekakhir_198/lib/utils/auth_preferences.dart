@@ -30,9 +30,6 @@ class AuthPreferences {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIsLoggedIn);
     await prefs.remove(_keyUsername);
-    // Optional: hapus foto profil jika mau logout bersih
-    // await prefs.remove('profile_pic_$username');
-    // await prefs.remove('profile_pic_web_$username');
   }
 
   /// Simpan user baru (dengan nama & nim)
